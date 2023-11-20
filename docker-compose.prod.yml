@@ -1,0 +1,51 @@
+version: '3.9'
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.prod.dockerfile
+    ports:
+      - 80:80
+      - 443:443
+    restart: always
+    depends_on:
+      - mysql
+      - php
+      - npm
+
+
+  php:
+    build:
+      context: .
+      dockerfile: php.prod.dockerfile
+
+  npm:
+    image: node:current-alpine
+    volumes:
+      - ./src:/var/www/html
+    entrypoint: ["/bin/sh", "-c", "npm install && npm run build"]
+    working_dir: /var/www/html
+
+  composer:
+    build:
+      context: .
+      dockerfile: composer.dockerfile
+    volumes:
+      - ./src:/var/www/html
+    entrypoint: ["/bin/sh", "-c", "composer install --optimize-autoloader --no-dev"]
+    working_dir: /var/www/html
+
+  artisan:
+    build:
+      context: .
+      dockerfile: composer.dockerfile
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - mysql
+    entrypoint: ["/bin/sh", "-c", "php artisan optimize && php artisan view:cache && php artisan event:cache"]
+    working_dir: /var/www/html
+
+
+
